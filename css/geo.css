@@ -1,216 +1,561 @@
+/* ========================================
+   GeoMapInk - Interactive Map of Hunza Valley
+   ======================================== */
+
+/* --- Reset & Base --- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
 body, html {
     height: 100%;
-    margin: 0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: #333;
 }
+
+/* --- Loading Overlay --- */
+#loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    transition: opacity 0.5s ease;
+}
+
+#loading-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #e0e0e0;
+    border-top-color: #2980b9;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+#loading-overlay p {
+    margin-top: 16px;
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+/* --- Header --- */
+#app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #1a5276, #2980b9);
+    color: white;
+    padding: 0 20px;
+    height: 52px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 1001;
+    position: relative;
+}
+
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-icon {
+    font-size: 24px;
+}
+
+.header-brand h1 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.header-subtitle {
+    font-size: 12px;
+    opacity: 0.85;
+    font-weight: 400;
+    border-left: 1px solid rgba(255, 255, 255, 0.4);
+    padding-left: 10px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.header-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.header-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.05);
+}
+
+/* --- Map Container --- */
 #map-container {
     display: flex;
-    height: 100%;
+    height: calc(100vh - 52px);
+    position: relative;
 }
+
 #map {
     flex-grow: 1;
-    height: 100vh;
+    height: 100%;
 }
-.right-sidebar {
-    width: 250px;
-    padding: 20px;
-    background-color: #f8f9fa;
-    overflow-y: auto;
-    box-sizing: border-box;
-}
-.checkbox-container, .button-container {
-    margin-top: 20px;
-}
-.checkbox-container label, .button-container button {
-    display: block;
-    padding: 5px;
+
+/* --- Sidebar Toggle (mobile) --- */
+#sidebar-toggle {
+    display: none;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 1000;
+    background: white;
+    border: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     cursor: pointer;
-    border: 1px solid #ddd;
-    background: #fff;
-    margin-bottom: 5px;
-}
-.checkbox-container label:hover, .button-container button:hover {
-    background: #e9ecef;
-}
-.print-button, .reset {
-background-color: black; /* Button background */
-color: rgb(0, 0, 0); /* Button text color - making it white for visibility */
-border: 4px solid rgb(65, 90, 251); /* Blue border */
+    font-size: 18px;
+    color: #2980b9;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
 }
 
-@media (max-width: 768px) {
-/* Make the map container flex-direction column on small screens */
-#map-container {
-flex-direction: column;
+#sidebar-toggle:hover {
+    background: #f0f0f0;
 }
 
-/* Adjust the map height to take up the top portion of the screen */
-#map {
-height: 60vh; /* 60% of the viewport height */
-flex-grow: 0; /* Prevent it from growing */
-}
-
-/* Adjust the right sidebar to be at the bottom */
+/* --- Right Sidebar --- */
 .right-sidebar {
-width: 100%;
-height: 40vh; /* 40% of the viewport height */
-overflow-y: auto; /* Enable scrolling if needed */
-position: relative; /* Adjust position */
-box-sizing: border-box;
-}
-}
-
-@media print {
-/* Hide elements that should not be printed */
-.right-sidebar, 
-other-elements-to-hide {
-display: none;
+    width: 280px;
+    padding: 0;
+    background: #f8f9fa;
+    overflow-y: auto;
+    border-left: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
 }
 
-/* Ensure the map takes up the full page */
-#map {
-height: auto;
-width: 100%;
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid #e0e0e0;
 }
 
-/* Additional print styles as needed */
+.sidebar-header h2 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a5276;
 }
 
-.sub-checkbox {
-    margin-left: 20px;
-}
-.info.legend {
-
-padding: 6px 8px;
-background: hsl(0, 0%, 99%); /* Ensure the background is white */
-box-shadow: 0 0 15px rgba(0,0,0,0.2);
-border-radius: 5px;
-line-height: 18px;
-color: #0d0d0d;
-font-weight: bold;
-z-index: 1000; /* Adjust this value as needed */
-
+.sidebar-close {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #999;
+    cursor: pointer;
+    padding: 4px;
 }
 
-
-.info.legend i {
-float: left;
-margin-right: 8px;
-opacity: 0.8;
-height: 18px; /* Ensuring a standard height */
-display: flex;
-align-items: center; /* Vertically center the content */
+.sidebar-close:hover {
+    color: #333;
 }
 
-/* Specific style for icon symbols in legend */
-.info.legend .icon-symbol {
-width: 18px; /* Standard icon width */
-height: 18px; /* Standard icon height */
-background-size: cover; /* Cover the area without stretching */
+/* --- Search --- */
+.search-container {
+    display: flex;
+    align-items: center;
+    margin: 12px 16px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-/* Specific style for line symbols in legend */
-.info.legend .line-symbol {
-width: 30px; /* Width of the line symbol */
-height: 2px; /* Height of the line symbol */
-background-color: currentColor; /* Use the color of the parent element */
-margin-top: 8px; /* Adjust for vertical alignment with text */
-margin-bottom: 8px; /* Ensure consistent spacing */
+.search-container:focus-within {
+    border-color: #2980b9;
+    box-shadow: 0 0 0 3px rgba(41, 128, 185, 0.15);
 }
 
-.map-label {
-    background-color: white;
-    padding: 5px;
-    border: 1px solid #999;
-    box-shadow: 0 0 15px rgba(0,0,0,0.2);
-    border-radius: 5px;
-}
-
-search-container {
-position: absolute; /* Position it relative to right-sidebar */
-top: 10px; /* Adjust as needed */
-left: 10px; /* Adjust as needed */
-right: 10px; /* Adjust as needed */
-z-index: 100; /* Ensures it stays on top of other elements */
-padding: 5px;
-background: white; /* Or any color that fits your design */
-border: 1px solid #ddd; /* Optional */
-border-radius: 5px; /* Optional for rounded corners */
-box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Optional for shadow */
+.search-icon {
+    padding: 0 10px;
+    color: #999;
+    font-size: 14px;
 }
 
 .search-container input[type="text"] {
-width: calc(100% - 90px); /* Adjust width to leave space for button */
-padding: 5px;
-border: 1px solid #ccc;
-border-radius: 4px;
-margin-right: 5px;
+    flex: 1;
+    border: none;
+    padding: 10px 4px;
+    font-size: 14px;
+    outline: none;
+    background: transparent;
 }
 
-.search-container button {
-padding: 5px 10px;
-background-color: #007bff; /* Example blue color */
-color: white;
-border: none;
-border-radius: 4px;
-cursor: pointer;
+.search-btn {
+    background: #2980b9;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
 }
 
-.search-container button:hover {
-background-color: #0056b3; /* Darker blue on hover */
-}
-.map-navigation-controls {
-position: absolute;
-right: 120px; /* Adjust as needed */
-bottom: 10px; /* Adjust as needed */
-width: 100px; /* Adjust as needed */
-height: 100px; /* Adjust as needed */
-border-radius: 50%; /* Circular shape */
-background-color: #007bff; /* Your desired background color */
-color: white; /* Text color for buttons */
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-box-shadow: 0 2px 6px rgba(0,0,0,0.3); /* Shadow for depth */
+.search-btn:hover {
+    background: #1a6a9e;
 }
 
-.control-button {
-background-color: transparent;
-border: none;
-cursor: pointer;
-display: flex;
-align-items: center;
-justify-content: center;
-font-size: 30px;
-color: white; /* Adjust color as needed */
+/* --- Layer Checkboxes --- */
+.checkbox-container {
+    padding: 0 16px 16px;
+    flex: 1;
 }
 
-.zoom-in, .zoom-out {
-position: absolute;
+.section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #999;
+    margin: 16px 0 8px;
 }
 
-.zoom-in {
-top: 10px; /* Adjust as needed */
+.layer-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: background 0.15s;
+    margin-bottom: 2px;
 }
 
-.zoom-out {
-bottom: 10px; /* Adjust as needed */
+.layer-item:hover {
+    background: #e9ecef;
 }
 
-.pan-left, .pan-right {
-position: absolute;
+.layer-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #2980b9;
+    cursor: pointer;
 }
 
-.pan-left {
-left: 10px; /* Adjust as needed */
+.layer-icon {
+    width: 20px;
+    text-align: center;
+    font-size: 14px;
 }
 
-.pan-right {
-right: 10px; /* Adjust as needed */
+.sub-checkbox {
+    margin-left: 8px;
+    border-left: 2px solid #e0e0e0;
+    padding-left: 8px;
 }
 
-/* Optional: add hover effect for buttons */
-.control-button:hover {
-background-color: #0056b3; /* Darker blue on hover */
+/* --- Action Buttons --- */
+.button-container {
+    padding: 0 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.action-btn:hover {
+    transform: translateY(-1px);
+}
+
+.action-btn:active {
+    transform: translateY(0);
+}
+
+.print-btn {
+    background: #2980b9;
+    color: white;
+}
+
+.print-btn:hover {
+    background: #1a6a9e;
+}
+
+.reset-btn {
+    background: white;
+    color: #333;
+    border: 1px solid #ddd;
+}
+
+.reset-btn:hover {
+    background: #f0f0f0;
+}
+
+/* --- Sidebar Footer --- */
+.sidebar-footer {
+    padding: 16px;
+    border-top: 1px solid #e0e0e0;
+    font-size: 11px;
+    color: #888;
+    text-align: center;
+    line-height: 1.6;
+}
+
+/* --- Legend --- */
+.info.legend {
+    padding: 10px 14px;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    line-height: 22px;
+    color: #333;
+    font-size: 13px;
+    max-width: 200px;
+}
+
+.info.legend strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: #1a5276;
+}
+
+.info.legend i {
+    float: left;
+    margin-right: 8px;
+    opacity: 0.9;
+    height: 18px;
+    display: flex;
+    align-items: center;
+}
+
+.info.legend .icon-symbol {
+    width: 18px;
+    height: 18px;
+    background-size: cover;
+}
+
+.info.legend .line-symbol {
+    width: 24px;
+    height: 3px;
+    border-radius: 2px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+/* --- Popup Styling --- */
+.leaflet-popup-content-wrapper {
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-popup-content {
+    margin: 12px 16px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.popup-content {
+    text-align: center;
+}
+
+.popup-content h4 {
+    margin: 0 0 6px;
+    font-size: 15px;
+    color: #1a5276;
+}
+
+.popup-content p {
+    margin: 0 0 8px;
+    color: #555;
+    font-size: 12px;
+}
+
+.popup-content .popup-type {
+    display: inline-block;
+    background: #eaf2f8;
+    color: #2980b9;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.popup-content img {
+    width: 180px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-top: 6px;
+    border: 1px solid #eee;
+}
+
+/* --- Map Label --- */
+.map-label {
+    background: white;
+    padding: 8px 12px;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    font-size: 11px;
+    color: #666;
+    line-height: 1.5;
+}
+
+/* --- Geolocation Marker --- */
+.geo-pulse {
+    width: 20px;
+    height: 20px;
+    background: rgba(41, 128, 185, 0.4);
+    border-radius: 50%;
+    position: relative;
+}
+
+.geo-pulse::after {
+    content: '';
+    position: absolute;
+    inset: 5px;
+    background: #2980b9;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Print Styles --- */
+@media print {
+    #app-header,
+    .right-sidebar,
+    #sidebar-toggle,
+    .leaflet-control-zoom,
+    .leaflet-control-draw,
+    .map-label {
+        display: none !important;
+    }
+
+    #map-container {
+        height: 100vh;
+    }
+
+    #map {
+        height: 100vh;
+        width: 100%;
+    }
+}
+
+/* --- Mobile Responsive --- */
+@media (max-width: 768px) {
+    #app-header {
+        height: 48px;
+        padding: 0 12px;
+    }
+
+    .header-brand h1 {
+        font-size: 16px;
+    }
+
+    .header-subtitle {
+        display: none;
+    }
+
+    #map-container {
+        height: calc(100vh - 48px);
+    }
+
+    #sidebar-toggle {
+        display: flex;
+    }
+
+    .right-sidebar {
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 100%;
+        width: 300px;
+        max-width: 85vw;
+        z-index: 1001;
+        box-shadow: -4px 0 16px rgba(0, 0, 0, 0.15);
+        transform: translateX(100%);
+    }
+
+    .right-sidebar.open {
+        transform: translateX(0);
+    }
+
+    .sidebar-close {
+        display: block;
+    }
+
+    /* Overlay behind sidebar */
+    .sidebar-overlay {
+        display: none;
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 1000;
+    }
+
+    .sidebar-overlay.active {
+        display: block;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-brand h1 {
+        font-size: 14px;
+    }
+
+    .header-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+}
