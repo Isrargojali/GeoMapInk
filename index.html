@@ -9,6 +9,8 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link rel="stylesheet" href="css/geo.css" />
 </head>
@@ -20,6 +22,13 @@
         <p>Loading map data...</p>
     </div>
 
+    <!-- Photo Lightbox -->
+    <div id="lightbox" class="lightbox" onclick="closeLightbox()">
+        <span class="lightbox-close">&times;</span>
+        <img id="lightbox-img" src="" alt="Photo">
+        <p id="lightbox-caption"></p>
+    </div>
+
     <!-- Header -->
     <header id="app-header">
         <div class="header-brand">
@@ -28,6 +37,18 @@
             <span class="header-subtitle">Interactive Map of Hunza Valley</span>
         </div>
         <div class="header-actions">
+            <button id="dark-mode-btn" class="header-btn" onclick="toggleDarkMode()" title="Toggle Dark Mode">
+                <i class="fas fa-moon"></i>
+            </button>
+            <button id="share-btn" class="header-btn" onclick="shareMapView()" title="Share Map View">
+                <i class="fas fa-share-alt"></i>
+            </button>
+            <button id="measure-btn" class="header-btn" onclick="toggleMeasure()" title="Measure Distance">
+                <i class="fas fa-ruler"></i>
+            </button>
+            <button id="nearby-btn" class="header-btn" onclick="toggleNearbySearch()" title="Find Nearby Places">
+                <i class="fas fa-map-pin"></i>
+            </button>
             <button id="fullscreen-btn" class="header-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen">
                 <i class="fas fa-expand"></i>
             </button>
@@ -39,6 +60,22 @@
 
     <div id="map-container">
         <div id="map"></div>
+
+        <!-- Measure tooltip -->
+        <div id="measure-tooltip" class="measure-tooltip" style="display:none;">
+            <span id="measure-distance">0 km</span>
+            <button onclick="clearMeasure()" class="measure-clear">Clear</button>
+        </div>
+
+        <!-- Weather widget -->
+        <div id="weather-widget" class="weather-widget">
+            <div class="weather-loading"><i class="fas fa-spinner fa-spin"></i></div>
+        </div>
+
+        <!-- Share toast -->
+        <div id="share-toast" class="share-toast" style="display:none;">
+            <i class="fas fa-check-circle"></i> Link copied to clipboard!
+        </div>
 
         <!-- Sidebar toggle for mobile -->
         <button id="sidebar-toggle" onclick="toggleSidebar()">
@@ -60,6 +97,25 @@
             </div>
 
             <div class="checkbox-container">
+                <h3 class="section-title">Base Map</h3>
+                <div class="basemap-switcher">
+                    <label class="layer-item basemap-option">
+                        <input type="radio" name="basemap" value="street" checked>
+                        <span class="layer-icon" style="color:#2980b9"><i class="fas fa-map"></i></span>
+                        Street
+                    </label>
+                    <label class="layer-item basemap-option">
+                        <input type="radio" name="basemap" value="satellite">
+                        <span class="layer-icon" style="color:#27ae60"><i class="fas fa-satellite"></i></span>
+                        Satellite
+                    </label>
+                    <label class="layer-item basemap-option">
+                        <input type="radio" name="basemap" value="terrain">
+                        <span class="layer-icon" style="color:#8e44ad"><i class="fas fa-mountain"></i></span>
+                        Terrain
+                    </label>
+                </div>
+
                 <h3 class="section-title">Map Layers</h3>
                 <label class="layer-item">
                     <input type="checkbox" id="boundaryCheckbox" checked>
@@ -72,7 +128,7 @@
                     Hotels
                 </label>
 
-                <h3 class="section-title">Roads</h3>
+                <h3 class="section-title">Roads & Paths</h3>
                 <div class="sub-checkbox">
                     <label class="layer-item">
                         <input type="checkbox" id="highwaysCheckbox" checked>
@@ -88,6 +144,11 @@
                         <input type="checkbox" id="residentRoadsCheckbox" checked>
                         <span class="layer-icon" style="color:#f39c12"><i class="fas fa-road"></i></span>
                         Residential Roads
+                    </label>
+                    <label class="layer-item">
+                        <input type="checkbox" id="pathCheckbox">
+                        <span class="layer-icon" style="color:#e91e63"><i class="fas fa-shoe-prints"></i></span>
+                        Footpaths
                     </label>
                 </div>
 
@@ -117,6 +178,11 @@
                     <span class="layer-icon" style="color:#87CEEB"><i class="fas fa-snowflake"></i></span>
                     Glaciers
                 </label>
+                <label class="layer-item">
+                    <input type="checkbox" id="publicServiceCheckbox">
+                    <span class="layer-icon" style="color:#c0392b"><i class="fas fa-hospital"></i></span>
+                    Public Services
+                </label>
             </div>
 
             <div class="button-container">
@@ -139,6 +205,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-ajax/dist/leaflet.ajax.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="js/geo.js"></script>
 </body>
 </html>
