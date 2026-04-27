@@ -1,377 +1,351 @@
+// ========================================
+// GeoMapInk - Interactive Map of Hunza Valley
+// ========================================
 
-//  var map = L.map('map').setView([36.3167, 74.6500], 9);
-  var map = L.map('map', {
-closePopupOnClick: false // Disable closing popups on map click
-}).setView([36.3167, 74.6500], 9);
+var HUNZA_CENTER = [36.3167, 74.6500];
+var DEFAULT_ZOOM = 9;
 
-  // Add base layer
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18,
-      attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
-  }).addTo(map);
+var map = L.map('map', {
+    zoomControl: true,
+    attributionControl: true
+}).setView(HUNZA_CENTER, DEFAULT_ZOOM);
 
-  function addLabels(feature, layer) {
-      if (feature.properties && feature.properties.name) {
-          layer.bindTooltip(feature.properties.name, { permanent: false, direction: 'auto' });
-      }
-  }
-  function searchData() {
-      var input = document.getElementById('searchInput').value.toLowerCase();
-      var selectedLayers = [];
-
-      // List of your checkbox IDs
-      var checkboxes = ['villagesCheckbox','passesCheckbox', 'hotelCheckbox' , 'touristPointsCheckbox' ]; // Add all your checkbox IDs here
-      checkboxes.forEach(function(checkboxId) {
-          var checkbox = document.getElementById(checkboxId);
-          
-          if (checkbox && checkbox.checked) {
-              selectedLayers.push(checkboxId.replace('Checkbox', '').toLowerCase());
-          }
-      });
-
-      // Filter and search logic
-      selectedLayers.forEach(function(layer) {
-          if (window[layer + 'Layer']) {
-              window[layer + 'Layer'].eachLayer(function(layer) {
-                  if (layer.feature && layer.feature.properties) {
-                      if (input.trim() === '') {
-  // Exit the function if the search input is empty
-  return;
-}
-
-                      var name = layer.feature.properties.name;
-                      if (name && name.toLowerCase().includes(input)) {
-                          
-
-                        // Zoom to the feature
-                        var coordinates = layer.feature.geometry.coordinates;
-                        map.setView([coordinates[1], coordinates[0]], 15); // 15 is the zoom level
-                        layer.openPopup();
-
-                      }
-                  }
-              });
-          }
-      });
-  }
-
-  // Event listener for Enter key in the search input
-  document.getElementById('searchInput').addEventListener('keypress', function(event) {
-      if (event.key === 'Enter') {
-          searchData();
-      }
-  });
-  // Define custom icons using the names of the GeoJSON files
-  var icons = {
-      hotels: L.icon({ iconUrl: 'icons/hotel.svg', iconSize: [20, 20] }),
-      touristpoints: L.icon({ iconUrl: 'icons/touristpoint.svg', iconSize: [35, 35] }),
-      passes: L.icon({ iconUrl: 'icons/passes.svg', iconSize: [35, 35] }),
-      glaciers: L.icon({ iconUrl: 'icons/glacier.png', iconSize: [15, 15] }),
-      villages: L.icon({ iconUrl: 'icons/village.svg', iconSize: [20, 20] })
-      // Add other icons as needed
-  };
-
-  // Modify pointToLayer function to use the appropriate icon
-  function pointToLayer(feature, latlng, layerType) {
-      return L.marker(latlng, { icon: icons[layerType] });
-  }
-
-  // Define and load layers with custom icons
-  var boundaryLayer = L.geoJSON.ajax('src/boundary.geojson').addTo(map);
- //* var hotelsLayer = L.geoJSON.ajax('src/hotels.geojson', {
-     // pointToLayer: function(feature, latlng) {
-      //    return pointToLayer(feature, latlng, 'hotels');
-    //  }
-  //}).addTo(map);
-  var hotelsLayer = L.geoJSON.ajax('src/hotels.geojson', {
-pointToLayer: function(feature, latlng) {
-  var marker = L.marker(latlng, { icon: icons.hotels });
-
-  if (feature.properties) {
-      var popupContent = '';
-      if (feature.properties.name) {
-          popupContent += '<strong>' + feature.properties.name + '</strong><br>';
-      }
-      if (feature.properties.Type) {
-          popupContent += '<strong> ' + feature.properties.Type + '</strong>';
-      }
-      marker.bindPopup(popupContent, { autoClose: false });
-  }
-
-  return marker;
-},
-onEachFeature: function(feature, layer) {
-  // Check if the feature has a property 'name' and bind a tooltip
-  if (feature.properties && feature.properties.name) {
-      layer.bindTooltip(feature.properties.name, { permanent: false, direction: 'auto' });
-  }
-}
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: 'Map data &copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
 }).addTo(map);
 
+// --- Custom Icons ---
+var icons = {
+    hotels: L.icon({ iconUrl: 'icons/hotel.svg', iconSize: [20, 20] }),
+    touristpoints: L.icon({ iconUrl: 'icons/touristpoint.svg', iconSize: [35, 35] }),
+    passes: L.icon({ iconUrl: 'icons/passes.svg', iconSize: [35, 35] }),
+    glaciers: L.icon({ iconUrl: 'icons/glacier.png', iconSize: [15, 15] }),
+    villages: L.icon({ iconUrl: 'icons/village.svg', iconSize: [20, 20] })
+};
 
-  var touristPointsLayer = L.geoJSON.ajax('src/touristpoints.geojson', {
-      pointToLayer: function(feature, latlng) {
-  var marker = L.marker(latlng, { icon: icons.touristpoints });
-
-  if (feature.properties) {
-      var popupContent = '';
-      if (feature.properties.name) {
-          popupContent += '<strong>'+feature.properties.name +'</strong>'+ '<br>';
-      }
-      if (feature.properties.desc) {
-          popupContent += feature.properties.desc;
-      }
-      if (feature.properties.imageUrl) {
-          popupContent += '<img src="' + feature.properties.imageUrl + '" alt="' + feature.properties.name + '" style="width:100px; height:70px;">';
+// --- Popup HTML Builder ---
+function buildPopup(props, type) {
+    var html = '<div class="popup-content">';
+    if (props.name) {
+        html += '<h4>' + props.name + '</h4>';
+    }
+    if (props.Type || props.type) {
+        html += '<span class="popup-type">' + (props.Type || props.type) + '</span>';
+    }
+    if (props.desc && props.desc.trim()) {
+        html += '<p>' + props.desc + '</p>';
+    }
+    if (props.imageUrl) {
+        html += '<img src="' + props.imageUrl + '" alt="' + (props.name || type) + '" loading="lazy">';
+    }
+    html += '</div>';
+    return html;
 }
-      marker.bindPopup(popupContent, { autoClose: false });
-  }
 
-  return marker;
-},
-onEachFeature: function(feature, layer) {
-  // Check if the feature has a property 'name' and bind a tooltip
-  if (feature.properties && feature.properties.name) {
-      layer.bindTooltip(feature.properties.name, { permanent: false, direction: 'auto' });
-  }
+// --- Layer Factory ---
+function createPointLayer(url, layerType) {
+    return L.geoJSON.ajax(url, {
+        pointToLayer: function(feature, latlng) {
+            var marker = L.marker(latlng, { icon: icons[layerType] });
+            if (feature.properties) {
+                marker.bindPopup(buildPopup(feature.properties, layerType), { autoClose: false, maxWidth: 220 });
+            }
+            return marker;
+        },
+        onEachFeature: function(feature, layer) {
+            if (feature.properties && feature.properties.name) {
+                layer.bindTooltip(feature.properties.name, { permanent: false, direction: 'auto' });
+            }
+        }
+    });
 }
+
+function createLineLayer(url, color) {
+    return L.geoJSON.ajax(url, {
+        style: { color: color, weight: 3, opacity: 0.8 },
+        onEachFeature: function(feature, layer) {
+            if (feature.properties && feature.properties.name) {
+                layer.bindTooltip(feature.properties.name, { permanent: false, direction: 'auto' });
+            }
+        }
+    });
+}
+
+// --- Load Layers ---
+var boundaryLayer = L.geoJSON.ajax('src/boundary.geojson', {
+    style: { color: '#3388ff', weight: 2, fillOpacity: 0.05 }
 }).addTo(map);
 
-
-  var passesLayer = L.geoJSON.ajax('src/passes.geojson', {
-      pointToLayer: function(feature, latlng) {
-  var marker = L.marker(latlng, { icon: icons.passes });
-
-  if (feature.properties) {
-      var popupContent = '';
-      if (feature.properties.name) {
-          popupContent += '<strong>'+feature.properties.name +'</strong>'+ '<br>';
-      }
-      if (feature.properties.desc) {
-          popupContent +=feature.properties.desc;
-      }
-      if (feature.properties.imageUrl) {
-          popupContent += '<img src="' + feature.properties.imageUrl + '" alt="' + feature.properties.name + '" style="width:100px; height:70px;">';
-}
-
-      marker.bindPopup(popupContent, { autoClose: false });
-  }
-
-  return marker;
-},
-onEachFeature: function(feature, layer) {
-  // Check if the feature has a property 'name' and bind a tooltip
-  if (feature.properties && feature.properties.name) {
-      layer.bindTooltip(feature.properties.name, { permanent: false, direction: 'auto' });
-  }
-}
-}).addTo(map);
+var hotelsLayer = createPointLayer('src/hotels.geojson', 'hotels').addTo(map);
+var touristPointsLayer = createPointLayer('src/touristpoints.geojson', 'touristpoints').addTo(map);
+var passesLayer = createPointLayer('src/passes.geojson', 'passes').addTo(map);
+var villagesLayer = createPointLayer('src/villages.geojson', 'villages').addTo(map);
 
 var glaciersLayer = L.geoJSON.ajax('src/glaciers.geojson', {
-style: function(feature) {
-  return {
-      color: '#87CEEB', // Bright sky blue color for the border
-      weight: 1, // Minimal border weight
-      opacity: 1,
-      fillColor: '#FFFFFF', // White color for the fill
-      fillOpacity: 0.7 // Slightly transparent fill
-  };
-}
-// other options...
+    style: {
+        color: '#87CEEB',
+        weight: 1,
+        opacity: 1,
+        fillColor: '#FFFFFF',
+        fillOpacity: 0.7
+    }
 }).addTo(map);
 
-  // Define and load road layers (with color styling)
-  var highwaysLayer = L.geoJSON.ajax('src/highway.geojson', {
-style: { color: 'blue' },
-onEachFeature: function (feature, layer) {
-  // Assuming your GeoJSON features have a property you want to show, for example, 'name'
-  if (feature.properties && feature.properties.name) {
-      layer.bindTooltip(feature.properties.name, { permanent: false, direction: 'auto' });
-  }
+var highwaysLayer = createLineLayer('src/highway.geojson', '#2980b9').addTo(map);
+var linkRoadsLayer = createLineLayer('src/linkroads.geojson', '#2c3e50').addTo(map);
+var residentRoadsLayer = createLineLayer('src/residential.geojson', '#f39c12').addTo(map);
+var tracksLayer = createLineLayer('src/tracks.geojson', '#16a085').addTo(map);
+
+// --- Loading Overlay ---
+var layersToLoad = [
+    boundaryLayer, hotelsLayer, touristPointsLayer, passesLayer,
+    villagesLayer, glaciersLayer, highwaysLayer, linkRoadsLayer,
+    residentRoadsLayer, tracksLayer
+];
+var loadedCount = 0;
+
+function checkAllLoaded() {
+    loadedCount++;
+    if (loadedCount >= layersToLoad.length) {
+        var overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+            overlay.classList.add('hidden');
+            setTimeout(function() { overlay.style.display = 'none'; }, 500);
+        }
+    }
 }
-}).addTo(map);
-  var linkRoadsLayer = L.geoJSON.ajax('src/linkroads.geojson', {style: {color: 'black'}}).addTo(map);
- 
-  var residentRoadsLayer = L.geoJSON.ajax('src/residential.geojson', {style: {color: 'yellow'}}).addTo(map);
 
-  var villagesLayer = L.geoJSON.ajax('src/villages.geojson', {
-      pointToLayer: function(feature, latlng) {
-  var marker = L.marker(latlng, { icon: icons.villages });
+layersToLoad.forEach(function(layer) {
+    layer.on('data:loaded', checkAllLoaded);
+    layer.on('data:error', checkAllLoaded);
+});
 
-  if (feature.properties) {
-      var popupContent = '';
-      if (feature.properties.name) {
-          popupContent += '<strong>'+feature.properties.name +'</strong>'+ '<br>' ;
-      }
-      if (feature.properties.desc) {
-          popupContent +=feature.properties.desc;
-      }
-      
-      if (feature.properties.imageUrl) {
-          popupContent += '<img src="' + feature.properties.imageUrl + '" alt="' + feature.properties.name + '" style="width:100px; height:70px;">';
-      marker.bindPopup(popupContent, { autoClose: false });
-      }
-  }
+// Hide overlay after 8s as fallback
+setTimeout(function() {
+    var overlay = document.getElementById('loading-overlay');
+    if (overlay && !overlay.classList.contains('hidden')) {
+        overlay.classList.add('hidden');
+        setTimeout(function() { overlay.style.display = 'none'; }, 500);
+    }
+}, 8000);
 
-  return marker;
-},
-onEachFeature: function(feature, layer) {
-  // Check if the feature has a property 'name' and bind a tooltip
-  if (feature.properties && feature.properties.name) {
-      layer.bindTooltip(feature.properties.name, { permanent: false, direction: 'auto' });
-  }
+// --- Search ---
+function searchData() {
+    var input = document.getElementById('searchInput').value.toLowerCase().trim();
+    if (!input) return;
+
+    var checkboxes = ['villagesCheckbox', 'passesCheckbox', 'hotelCheckbox', 'touristPointsCheckbox'];
+    var layerMap = {
+        villages: villagesLayer,
+        passes: passesLayer,
+        hotel: hotelsLayer,
+        touristPoints: touristPointsLayer
+    };
+    var found = false;
+
+    checkboxes.forEach(function(checkboxId) {
+        var checkbox = document.getElementById(checkboxId);
+        if (checkbox && checkbox.checked) {
+            var key = checkboxId.replace('Checkbox', '');
+            var targetLayer = layerMap[key];
+            if (targetLayer) {
+                targetLayer.eachLayer(function(layer) {
+                    if (layer.feature && layer.feature.properties) {
+                        var name = layer.feature.properties.name;
+                        if (name && name.toLowerCase().includes(input)) {
+                            var coords = layer.feature.geometry.coordinates;
+                            map.flyTo([coords[1], coords[0]], 15, { duration: 1.5 });
+                            layer.openPopup();
+                            found = true;
+                        }
+                    }
+                });
+            }
+        }
+    });
+
+    if (!found) {
+        var searchInput = document.getElementById('searchInput');
+        searchInput.style.borderColor = '#e74c3c';
+        setTimeout(function() { searchInput.style.borderColor = ''; }, 1500);
+    }
 }
-}).addTo(map);
 
-  var tracksLayer = L.geoJSON.ajax('src/tracks.geojson', {style: {color: 'green'}, onEachFeature: function (feature, layer) {
-  // Assuming your GeoJSON features have a property you want to show, for example, 'name'
-  if (feature.properties && feature.properties.name) {
-      layer.bindTooltip(feature.properties.name, { permanent: false, direction: 'auto' });
-  }
+document.getElementById('searchInput').addEventListener('keypress', function(event) {
+    if (event.key === 'Enter') {
+        searchData();
+    }
+});
+
+// --- Layer Toggle ---
+function toggleLayer(checkboxId, layer) {
+    var checkbox = document.getElementById(checkboxId);
+    checkbox.addEventListener('change', function() {
+        if (this.checked) {
+            layer.addTo(map);
+        } else {
+            map.removeLayer(layer);
+        }
+        updateLegend();
+    });
 }
-}).addTo(map);
 
+toggleLayer('boundaryCheckbox', boundaryLayer);
+toggleLayer('hotelCheckbox', hotelsLayer);
+toggleLayer('highwaysCheckbox', highwaysLayer);
+toggleLayer('linkRoadsCheckbox', linkRoadsLayer);
+toggleLayer('residentRoadsCheckbox', residentRoadsLayer);
+toggleLayer('touristPointsCheckbox', touristPointsLayer);
+toggleLayer('villagesCheckbox', villagesLayer);
+toggleLayer('passesCheckbox', passesLayer);
+toggleLayer('tracksCheckbox', tracksLayer);
+toggleLayer('glaciersCheckbox', glaciersLayer);
 
-
-
-  // Functions to update layer visibility
-  function toggleLayer(checkboxId, layer) {
-      var checkbox = document.getElementById(checkboxId);
-      checkbox.addEventListener('change', function() {
-          if (this.checked) {
-              layer.addTo(map);
-          } else {
-              map.removeLayer(layer);
-          }
-          updateLegend();
-      });
-  }
-     
-  // Toggle layers based on checkboxes
-  toggleLayer('boundaryCheckbox', boundaryLayer);
-  toggleLayer('hotelCheckbox', hotelsLayer);
-  toggleLayer('highwaysCheckbox', highwaysLayer);
-  toggleLayer('linkRoadsCheckbox', linkRoadsLayer);
-  toggleLayer('residentRoadsCheckbox', residentRoadsLayer);
-  toggleLayer('touristPointsCheckbox', touristPointsLayer);
-  toggleLayer('villagesCheckbox', villagesLayer);
-  toggleLayer('passesCheckbox', passesLayer);
-  toggleLayer('tracksCheckbox', tracksLayer);
-  toggleLayer('glaciersCheckbox', glaciersLayer);
-
-// Function to update the legend based on selected layers
-function updateLegend() {
+// --- Legend ---
 var layersInfo = {
-  "Boundary": { layer: boundaryLayer, color: "blue", type: "line" },
-  "Hotels": { layer: hotelsLayer, icon: icons.hotels, type: "point" },
-  "Tourist Points": { layer: touristPointsLayer, icon: icons.touristpoints, type: "point" },
-  "Villages": { layer: villagesLayer, icon: icons.villages, type: "point" },
-  "Passes": { layer: passesLayer, icon: icons.passes, type: "point" },
-  "Highways": { layer: highwaysLayer, color: "blue", type: "line" },
-  "Link Roads": { layer: linkRoadsLayer, color: "black", type: "line" },
-  "Residential Roads": { layer: residentRoadsLayer, color: "yellow", type: "line" },
-  "Tracks": { layer: tracksLayer, color: "green", type: "line" }
-  
-  // Add other layers as needed
+    "Boundary": { layer: boundaryLayer, color: "#3388ff", type: "line" },
+    "Hotels": { layer: hotelsLayer, icon: icons.hotels, type: "point" },
+    "Tourist Points": { layer: touristPointsLayer, icon: icons.touristpoints, type: "point" },
+    "Villages": { layer: villagesLayer, icon: icons.villages, type: "point" },
+    "Passes": { layer: passesLayer, icon: icons.passes, type: "point" },
+    "Highways": { layer: highwaysLayer, color: "#2980b9", type: "line" },
+    "Link Roads": { layer: linkRoadsLayer, color: "#2c3e50", type: "line" },
+    "Residential Roads": { layer: residentRoadsLayer, color: "#f39c12", type: "line" },
+    "Tracks": { layer: tracksLayer, color: "#16a085", type: "line" }
 };
 
-var legendContent = '<strong>Legend</strong><br>';
-for (var key in layersInfo) {
-  if (map.hasLayer(layersInfo[key].layer)) {
-      if (layersInfo[key].type === "point") {
-          // For point layers, use icon with 'icon-symbol' class
-          legendContent += '<i class="icon-symbol" style="background-image: url(' + layersInfo[key].icon.options.iconUrl + ');"></i> ' + key + '<br>';
-      } else {
-          // For line layers, use colored line with 'line-symbol' class
-          legendContent += '<i class="line-symbol" style="background: ' + layersInfo[key].color + ';"></i> ' + key + '<br>';
-      }
-  }
+function updateLegend() {
+    var legendContent = '<strong>Legend</strong>';
+    for (var key in layersInfo) {
+        if (map.hasLayer(layersInfo[key].layer)) {
+            if (layersInfo[key].type === "point") {
+                legendContent += '<i class="icon-symbol" style="background-image: url(' + layersInfo[key].icon.options.iconUrl + ');"></i> ' + key + '<br>';
+            } else {
+                legendContent += '<i class="line-symbol" style="background: ' + layersInfo[key].color + ';"></i> ' + key + '<br>';
+            }
+        }
+    }
+    var legendDiv = document.getElementById('map-legend');
+    if (legendDiv) {
+        legendDiv.innerHTML = legendContent;
+    }
 }
 
-var legendDiv = document.getElementById('map-legend');
-if (legendDiv) {
-  legendDiv.innerHTML = legendContent;
-}
-}
+var legend = L.control({ position: 'bottomleft' });
+legend.onAdd = function() {
+    var div = L.DomUtil.create('div', 'info legend');
+    div.id = 'map-legend';
+    return div;
+};
+legend.addTo(map);
 
-
-  var legend = L.control({ position: 'bottomleft' });
-  legend.onAdd = function(map) {
-      var div = L.DomUtil.create('div', 'info legend');
-      div.id = 'map-legend';
-      div.innerHTML = '';
-      return div;
-  };
-  legend.addTo(map);
-
-  // Create and add a label control for "@geomapink.com"
-  var label = L.control({ position: 'bottomright' }); // Position doesn't matter due to absolute CSS
-label.onAdd = function(map) {
-var div = L.DomUtil.create('div', 'map-label');
-div.innerHTML = 'Project of NCRG:IST Karachi <br> Developed by Israr Ahmad<br> @GEO-MAP-INK';
-return div;
-
+var label = L.control({ position: 'bottomright' });
+label.onAdd = function() {
+    var div = L.DomUtil.create('div', 'map-label');
+    div.innerHTML = 'Project of NCRG: IST Karachi<br>Developed by Israr Ahmad<br><strong>@GeoMapInk</strong>';
+    return div;
 };
 label.addTo(map);
-  // Initial call to update the legend and event listener for layer changes
-  updateLegend();
-  map.on('overlayadd overlayremove', updateLegend);
 
+updateLegend();
+map.on('overlayadd overlayremove', updateLegend);
 
-  function printMap() {
-window.print(); // This triggers the browser's print dialog
+// --- Map Controls ---
+function printMap() {
+    window.print();
 }
-  function resetZoom() {
-      map.setView([36.3167, 74.6500], 9);
-  }
-  function smoothZoomIn() {
-      var currentZoom = map.getZoom();
-      var newZoom = currentZoom + .3;
-      map.flyTo(map.getCenter(), newZoom);
-  }
 
-  function smoothZoomOut() {
-      var currentZoom = map.getZoom();
-      var newZoom = currentZoom - .3;
-      map.flyTo(map.getCenter(), newZoom);
-  }
+function resetZoom() {
+    map.flyTo(HUNZA_CENTER, DEFAULT_ZOOM, { duration: 1 });
+}
 
-  // Smooth Panning Functions
-  function panLeft() {
-      var currentCenter = map.getCenter();
-      var offsetX = 0.05; // Adjust the offset value as needed
-      var newCenter = L.latLng(currentCenter.lat, currentCenter.lng - offsetX);
-      map.panTo(newCenter);
-  }
+// --- Fullscreen ---
+function toggleFullscreen() {
+    var btn = document.querySelector('#fullscreen-btn i');
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+        btn.className = 'fas fa-compress';
+    } else {
+        document.exitFullscreen();
+        btn.className = 'fas fa-expand';
+    }
+}
 
-  function panRight() {
-      var currentCenter = map.getCenter();
-      var offsetX = 0.01; // Adjust the offset value as needed
-      var newCenter = L.latLng(currentCenter.lat, currentCenter.lng + offsetX);
-      map.panTo(newCenter);
-  }
-  // Assuming map is already initialized and assigned to variable 'map'
+document.addEventListener('fullscreenchange', function() {
+    var btn = document.querySelector('#fullscreen-btn i');
+    if (btn) {
+        btn.className = document.fullscreenElement ? 'fas fa-compress' : 'fas fa-expand';
+    }
+});
 
-// Initialize the FeatureGroup to store editable layers
+// --- Geolocation ---
+var geoMarker = null;
+
+function geolocateUser() {
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+        function(pos) {
+            var latlng = [pos.coords.latitude, pos.coords.longitude];
+            if (geoMarker) {
+                map.removeLayer(geoMarker);
+            }
+            geoMarker = L.marker(latlng, {
+                icon: L.divIcon({
+                    className: 'geo-pulse',
+                    iconSize: [20, 20]
+                })
+            }).addTo(map);
+            geoMarker.bindPopup('<div class="popup-content"><h4>Your Location</h4></div>').openPopup();
+            map.flyTo(latlng, 13, { duration: 1.5 });
+        },
+        function() {
+            alert('Unable to retrieve your location.');
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+}
+
+// --- Mobile Sidebar Toggle ---
+function toggleSidebar() {
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebar-overlay');
+    sidebar.classList.toggle('open');
+    if (overlay) {
+        overlay.classList.toggle('active');
+    }
+}
+
+// Create overlay element for mobile sidebar
+(function() {
+    var container = document.getElementById('map-container');
+    var overlay = document.createElement('div');
+    overlay.id = 'sidebar-overlay';
+    overlay.className = 'sidebar-overlay';
+    overlay.onclick = toggleSidebar;
+    container.appendChild(overlay);
+})();
+
+// --- Draw Controls ---
 var drawnItems = new L.FeatureGroup();
 map.addLayer(drawnItems);
 
 var drawControl = new L.Control.Draw({
-  edit: {
-    featureGroup: drawnItems,
-  },
-  draw: {
-    polyline: true,
-    polygon: true,
-    rectangle: true,
-    circle: true,
-    marker: true
-  }
+    edit: { featureGroup: drawnItems },
+    draw: {
+        polyline: true,
+        polygon: true,
+        rectangle: true,
+        circle: true,
+        marker: true
+    }
 });
 map.addControl(drawControl);
 
 map.on(L.Draw.Event.CREATED, function(event) {
-  var layer = event.layer;
-  drawnItems.addLayer(layer);
+    drawnItems.addLayer(event.layer);
 });
 
+// Invalidate map size after DOM is ready
+setTimeout(function() { map.invalidateSize(); }, 100);
