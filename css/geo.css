@@ -15,6 +15,102 @@ body, html {
     color: #333;
 }
 
+/* --- Dark Mode --- */
+body.dark-mode {
+    background: #1a1a2e;
+    color: #e0e0e0;
+}
+
+body.dark-mode #app-header {
+    background: linear-gradient(135deg, #0f0f23, #1a1a3e);
+}
+
+body.dark-mode .right-sidebar {
+    background: #16213e;
+    border-left-color: #2a2a4a;
+}
+
+body.dark-mode .sidebar-header {
+    border-bottom-color: #2a2a4a;
+}
+
+body.dark-mode .sidebar-header h2 {
+    color: #8ab4f8;
+}
+
+body.dark-mode .search-container {
+    background: #1a1a3e;
+    border-color: #2a2a4a;
+}
+
+body.dark-mode .search-container input[type="text"] {
+    color: #e0e0e0;
+}
+
+body.dark-mode .section-title {
+    color: #7a7a9a;
+}
+
+body.dark-mode .layer-item {
+    color: #ccc;
+}
+
+body.dark-mode .layer-item:hover {
+    background: #1a1a3e;
+}
+
+body.dark-mode .reset-btn {
+    background: #1a1a3e;
+    color: #ccc;
+    border-color: #2a2a4a;
+}
+
+body.dark-mode .sidebar-footer {
+    border-top-color: #2a2a4a;
+    color: #666;
+}
+
+body.dark-mode .info.legend {
+    background: #16213e;
+    color: #ccc;
+}
+
+body.dark-mode .info.legend strong {
+    color: #8ab4f8;
+}
+
+body.dark-mode .map-label {
+    background: #16213e;
+    color: #999;
+}
+
+body.dark-mode .weather-widget {
+    background: #16213e;
+    color: #ccc;
+    border-color: #2a2a4a;
+}
+
+body.dark-mode .basemap-option {
+    color: #ccc;
+}
+
+body.dark-mode .leaflet-popup-content-wrapper {
+    background: #16213e;
+    color: #ccc;
+}
+
+body.dark-mode .leaflet-popup-tip {
+    background: #16213e;
+}
+
+body.dark-mode .popup-content h4 {
+    color: #8ab4f8;
+}
+
+body.dark-mode .popup-content p {
+    color: #aaa;
+}
+
 /* --- Loading Overlay --- */
 #loading-overlay {
     position: fixed;
@@ -93,7 +189,7 @@ body, html {
 
 .header-actions {
     display: flex;
-    gap: 8px;
+    gap: 6px;
 }
 
 .header-btn {
@@ -107,13 +203,18 @@ body, html {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 15px;
     transition: background 0.2s, transform 0.1s;
 }
 
 .header-btn:hover {
     background: rgba(255, 255, 255, 0.25);
     transform: scale(1.05);
+}
+
+.header-btn.active {
+    background: rgba(255, 255, 255, 0.35);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.5);
 }
 
 /* --- Map Container --- */
@@ -238,6 +339,34 @@ body, html {
 
 .search-btn:hover {
     background: #1a6a9e;
+}
+
+/* --- Base Map Switcher --- */
+.basemap-switcher {
+    display: flex;
+    gap: 4px;
+}
+
+.basemap-option {
+    flex: 1;
+    justify-content: center;
+    font-size: 12px;
+    padding: 6px 4px;
+    text-align: center;
+}
+
+.basemap-option input[type="radio"] {
+    display: none;
+}
+
+.basemap-option:has(input:checked) {
+    background: #2980b9;
+    color: white;
+    border-radius: 6px;
+}
+
+.basemap-option:has(input:checked) .layer-icon {
+    color: white !important;
 }
 
 /* --- Layer Checkboxes --- */
@@ -437,6 +566,57 @@ body, html {
     border-radius: 6px;
     margin-top: 6px;
     border: 1px solid #eee;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.popup-content img:hover {
+    opacity: 0.85;
+}
+
+/* --- Lightbox --- */
+.lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 20000;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    cursor: pointer;
+}
+
+.lightbox.active {
+    display: flex;
+}
+
+.lightbox img {
+    max-width: 90vw;
+    max-height: 80vh;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: white;
+    font-size: 36px;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.lightbox-close:hover {
+    color: #ccc;
+}
+
+#lightbox-caption {
+    color: white;
+    margin-top: 12px;
+    font-size: 16px;
+    font-weight: 500;
 }
 
 /* --- Map Label --- */
@@ -470,6 +650,139 @@ body, html {
     box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
 }
 
+/* --- Measure Tool --- */
+.measure-tooltip {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.measure-clear {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.measure-clear:hover {
+    background: #c0392b;
+}
+
+/* --- Weather Widget --- */
+.weather-widget {
+    position: absolute;
+    top: 12px;
+    left: 60px;
+    z-index: 1000;
+    background: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 120px;
+}
+
+.weather-widget .weather-loading {
+    color: #999;
+}
+
+.weather-icon {
+    font-size: 20px;
+}
+
+.weather-info {
+    line-height: 1.3;
+}
+
+.weather-temp {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.weather-desc {
+    color: #666;
+    font-size: 11px;
+    text-transform: capitalize;
+}
+
+/* --- Share Toast --- */
+.share-toast {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2000;
+    background: #27ae60;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    animation: fadeInOut 2.5s ease forwards;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    85% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* --- Nearby Search Radius Circle --- */
+.nearby-circle {
+    stroke: #e74c3c;
+    fill: rgba(231, 76, 60, 0.1);
+}
+
+/* --- Marker Cluster Customization --- */
+.marker-cluster-small {
+    background-color: rgba(41, 128, 185, 0.3);
+}
+
+.marker-cluster-small div {
+    background-color: rgba(41, 128, 185, 0.7);
+    color: white;
+    font-weight: 700;
+}
+
+.marker-cluster-medium {
+    background-color: rgba(230, 126, 34, 0.3);
+}
+
+.marker-cluster-medium div {
+    background-color: rgba(230, 126, 34, 0.7);
+    color: white;
+    font-weight: 700;
+}
+
+.marker-cluster-large {
+    background-color: rgba(231, 76, 60, 0.3);
+}
+
+.marker-cluster-large div {
+    background-color: rgba(231, 76, 60, 0.7);
+    color: white;
+    font-weight: 700;
+}
+
 /* --- Print Styles --- */
 @media print {
     #app-header,
@@ -477,7 +790,10 @@ body, html {
     #sidebar-toggle,
     .leaflet-control-zoom,
     .leaflet-control-draw,
-    .map-label {
+    .map-label,
+    .weather-widget,
+    .measure-tooltip,
+    #lightbox {
         display: none !important;
     }
 
@@ -504,6 +820,16 @@ body, html {
 
     .header-subtitle {
         display: none;
+    }
+
+    .header-actions {
+        gap: 4px;
+    }
+
+    .header-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 13px;
     }
 
     #map-container {
@@ -534,7 +860,6 @@ body, html {
         display: block;
     }
 
-    /* Overlay behind sidebar */
     .sidebar-overlay {
         display: none;
         position: absolute;
@@ -546,6 +871,15 @@ body, html {
     .sidebar-overlay.active {
         display: block;
     }
+
+    .weather-widget {
+        left: 10px;
+        top: 60px;
+    }
+
+    .basemap-switcher {
+        flex-direction: column;
+    }
 }
 
 @media (max-width: 480px) {
@@ -554,8 +888,9 @@ body, html {
     }
 
     .header-btn {
-        width: 32px;
-        height: 32px;
-        font-size: 14px;
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+        border-radius: 6px;
     }
 }
